@@ -11,6 +11,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <PackageId>PureQL.CSharp.Model.Graph.Neo4j.Migration</PackageId>
+    <Description>Migrates stored PureQL query graphs in Neo4j between model versions: the version marker and label and property migrations.</Description>
     <RootNamespace>PureQL.CSharp.Model.Graph.Neo4j.Migration</RootNamespace>
     <AssemblyName>PureQL.CSharp.Model.Graph.Neo4j.Migration</AssemblyName>
     <Authors>Dmitry Kurochkin</Authors>
