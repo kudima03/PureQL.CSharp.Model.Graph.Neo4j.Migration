@@ -23,6 +23,15 @@ Namespace `PureQL.CSharp.Model.Graph.Neo4j.Migration`:
 |------|-------------|
 | `ModelVersion` | `sealed record ModelVersion(string Value)`: a `PureQL.CSharp.Model` version such as `0.1.0-preview.14.0.0`; the value must not be empty |
 | `IGraphMigration` | A change of the stored graphs from the model version `From` to `To`, applied on an `IAsyncQueryRunner` |
+| `StoredModelVersion` | `(IAsyncQueryRunner Runner)`: `ValueAsync` reads the version of the single `PureQLModelVersion` node, `null` when none is stored; more than one throws |
+| `MarkedModelVersion` | `(IAsyncQueryRunner Runner, ModelVersion Version)`: `ApplyAsync` merges the single marker node and sets its `value` |
+| `MigratedQueries` | `(IAsyncQueryRunner Runner, IEnumerable<IGraphMigration> Migrations)`: `ApplyAsync` applies the migration starting at the stored version, marks its `To`, and repeats until none starts at the current version; throws when no marker is stored, two migrations share a `From` or the chain loops |
+| `RelabeledRecords` | `(ModelVersion From, ModelVersion To, IReadOnlyDictionary<string, string> Labels)`: an `IGraphMigration` replacing each old label by its new one |
+| `RenamedProperties` | `(ModelVersion From, ModelVersion To, string Label, IReadOnlyDictionary<string, string> Properties)`: an `IGraphMigration` moving each old property of the nodes with `Label` to its new name |
+| `StoredModelVersionOf`, `MarkedModelVersionOf`, `MigratedQueriesOf` | The same over an `INeo4jStoredQueries`: each opens a session on its driver for its database; `MigratedQueriesOf` runs the whole chain in one write transaction |
+
+Labels and property keys are dynamic (`$(...)`, `n[key]`), so the server must be Neo4j 5.26
+or later.
 
 ## Dependencies
 
@@ -38,6 +47,40 @@ Namespace `PureQL.CSharp.Model.Graph.Neo4j.Migration`:
 
 ```
 dotnet add package PureQL.CSharp.Model.Graph.Neo4j.Migration
+```
+
+## Usage
+
+```csharp
+using Neo4j.Driver;
+using PureQL.CSharp.Model.Graph.Neo4j.Abstractions;
+using PureQL.CSharp.Model.Graph.Neo4j.Migration;
+
+INeo4jStoredQueries store = new Neo4jStoredQueries(driver, "neo4j");
+
+// Once, after writing the first graphs: the model version they were written with.
+await new MarkedModelVersionOf(store, new ModelVersion("0.1.0-preview.14.0.0")).ApplyAsync();
+
+// On upgrade: every migration from the stored version on, in one transaction.
+await new MigratedQueriesOf(
+    store,
+    [
+        new RelabeledRecords(
+            new ModelVersion("0.1.0-preview.14.0.0"),
+            new ModelVersion("0.1.0-preview.15.0.0"),
+            new Dictionary<string, string> { ["OldRecord"] = "NewRecord" }
+        ),
+        new RenamedProperties(
+            new ModelVersion("0.1.0-preview.15.0.0"),
+            new ModelVersion("0.1.0-preview.16.0.0"),
+            "NewRecord",
+            new Dictionary<string, string> { ["Old"] = "New" }
+        ),
+    ]
+).ApplyAsync();
+
+ModelVersion? version = await new StoredModelVersionOf(store).ValueAsync();
+// 0.1.0-preview.16.0.0
 ```
 
 ## Related packages

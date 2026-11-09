@@ -24,10 +24,19 @@ This is the **Neo4j migration package** of the `PureQL.CSharp.Model.Graph` famil
 
 - `ModelVersion` — `sealed record (string Value)`: a `PureQL.CSharp.Model` version; a null, empty or white-space value throws, also through `with`.
 - `IGraphMigration` — `From`, `To` and `ApplyAsync(IAsyncQueryRunner runner, CancellationToken ct = default)`: one step between two model versions.
+- `StoredModelVersion` — `(IAsyncQueryRunner Runner)`, `ValueAsync`: `MATCH (v:PureQLModelVersion) RETURN v.value AS value LIMIT 2`; `null` without a marker, `InvalidOperationException` with two or with a marker holding no non-empty string.
+- `MarkedModelVersion` — `(IAsyncQueryRunner Runner, ModelVersion Version)`, `ApplyAsync`: `MERGE (v:PureQLModelVersion) SET v.value = $value`, so there is one marker at most.
+- `MigratedQueries` — `(IAsyncQueryRunner Runner, IEnumerable<IGraphMigration> Migrations)`, `ApplyAsync`: indexes the migrations by `From` (a duplicate throws), reads the stored version (none throws), builds the chain from it (a loop throws) before running anything, then applies each step and marks its `To`.
+- `RelabeledRecords` — `IGraphMigration` over `Labels` (old → new): one statement, `UNWIND` the pairs, `MATCH (n:$(label.old))`, collect, remove every old label in a `CALL (rows) { … }`, then set the new ones, so pairs may swap or chain.
+- `RenamedProperties` — `IGraphMigration` over the nodes with `Label` and `Properties` (old → new): one statement computing the moved values first (`n[p.old]`), nulling every old key, then setting `n[new]`, so pairs may swap or chain; nodes lacking an old key keep their other properties.
+- `StoredModelVersionOf`, `MarkedModelVersionOf`, `MigratedQueriesOf` — the same over an `INeo4jStoredQueries`: a session on `Store.Driver` for `Store.Database`, a read transaction for the first, a write transaction for the others (`MigratedQueriesOf` runs the whole chain in one, so a failed step changes nothing).
+- `RenamePairs` (internal) — a dictionary as a list of `{old, new}` maps for the statements.
+
+Statements use Neo4j 5.26+'s dynamic labels (`$(...)`) and dynamic property keys (`n[key]`).
 
 The public API is the one the family agreed on for this package: do not rename or reshape it. Every public member has XML documentation (`GenerateDocumentationFile`; a missing comment fails the build under `-warnaserror`).
 
-**Test project:** `PureQL.CSharp.Model.Graph.Neo4j.Migration.Tests` targets `net11.0` and uses xunit with coverlet.
+**Test project:** `PureQL.CSharp.Model.Graph.Neo4j.Migration.Tests` targets `net11.0` and uses xunit with coverlet. `ModelVersionTests` are unit tests; the others run against one `neo4j:5-community` container started by Testcontainers (`Neo4jFixture`, shared through the `Neo4jDatabase` collection; Docker is required, no fixed ports) and clear the database before each test. `RecordingMigration` and `FailingMigration` are test migrations for the chain and the rollback.
 
 **Target framework:** net11.0 only, as the model. `IsAotCompatible` is `true`.
 

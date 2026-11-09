@@ -8,19 +8,25 @@ namespace PureQL.CSharp.Model.Graph.Neo4j.Migration;
 /// written with the previous one.
 /// </summary>
 /// <remarks>
-/// <c>MigratedQueries</c> chains migrations by their versions: it applies the
-/// migration whose <see cref="From"/> is the stored version, marks the graphs with its
-/// <see cref="To"/>, and continues from there.
+/// <see cref="MigratedQueries"/> chains migrations by their versions: it applies the
+/// migration whose <see cref="From"/> is the stored version, marks the graphs with
+/// its <see cref="To"/>, and continues from there.
 /// </remarks>
 public interface IGraphMigration
 {
-    /// <summary>The model version the graphs this migration changes were written with.</summary>
+    /// <summary>
+    /// The model version the graphs this migration changes were written with.
+    /// </summary>
     public ModelVersion From { get; }
 
-    /// <summary>The model version the graphs match once this migration is applied.</summary>
+    /// <summary>
+    /// The model version the graphs match once this migration is applied.
+    /// </summary>
     public ModelVersion To { get; }
 
-    /// <summary>Changes the stored graphs from <see cref="From"/> to <see cref="To"/>.</summary>
+    /// <summary>
+    /// Changes the stored graphs from <see cref="From"/> to <see cref="To"/>.
+    /// </summary>
     /// <param name="runner">
     /// The session or transaction to run the statements on; the version marker is left
     /// to the caller.
