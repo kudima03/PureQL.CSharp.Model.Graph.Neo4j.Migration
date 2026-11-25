@@ -15,13 +15,18 @@ Migrates **PureQL** query graphs stored in Neo4j from one model version to the n
 version renames a record or a property, a migration rewrites the graphs written with the
 previous version.
 
+No migration leads to model `0.1.0-preview.15.0.0`: graphs written with an earlier model
+are not migrated. Drop them (for example with
+[`PureQL.CSharp.Model.Graph.Neo4j.Destruction`](https://github.com/kudima03/PureQL.CSharp.Model.Graph.Neo4j.Destruction)),
+store the queries again and mark the stored version `0.1.0-preview.15.0.0`.
+
 ## Public API
 
 Namespace `PureQL.CSharp.Model.Graph.Neo4j.Migration`:
 
 | Name | Description |
 |------|-------------|
-| `ModelVersion` | `sealed record ModelVersion(string Value)`: a `PureQL.CSharp.Model` version such as `0.1.0-preview.14.0.0`; the value must not be empty |
+| `ModelVersion` | `sealed record ModelVersion(string Value)`: a `PureQL.CSharp.Model` version such as `0.1.0-preview.15.0.0`; the value must not be empty |
 | `IGraphMigration` | A change of the stored graphs from the model version `From` to `To`, applied on an `IAsyncQueryRunner` |
 | `StoredModelVersion` | `(IAsyncQueryRunner Runner)`: `ValueAsync` reads the version of the single `PureQLModelVersion` node, `null` when none is stored; more than one throws |
 | `MarkedModelVersion` | `(IAsyncQueryRunner Runner, ModelVersion Version)`: `ApplyAsync` merges the single marker node and sets its `value` |
@@ -35,8 +40,8 @@ or later.
 
 ## Dependencies
 
-- [`PureQL.CSharp.Model.Graph`](https://github.com/kudima03/PureQL.CSharp.Model.Graph) `0.1.0-preview.1.1.0`
-- [`PureQL.CSharp.Model.Graph.Neo4j.Abstractions`](https://github.com/kudima03/PureQL.CSharp.Model.Graph.Neo4j.Abstractions) `0.1.0-preview.1.1.0`
+- [`PureQL.CSharp.Model.Graph`](https://github.com/kudima03/PureQL.CSharp.Model.Graph) `0.1.0-preview.2.0.0`
+- [`PureQL.CSharp.Model.Graph.Neo4j.Abstractions`](https://github.com/kudima03/PureQL.CSharp.Model.Graph.Neo4j.Abstractions) `0.1.0-preview.2.0.0`
 - [`Neo4j.Driver`](https://www.nuget.org/packages/Neo4j.Driver) `6.5.1`
 
 ## Target Frameworks
@@ -59,20 +64,20 @@ using PureQL.CSharp.Model.Graph.Neo4j.Migration;
 INeo4jStoredQueries store = new Neo4jStoredQueries(driver, "neo4j");
 
 // Once, after writing the first graphs: the model version they were written with.
-await new MarkedModelVersionOf(store, new ModelVersion("0.1.0-preview.14.0.0")).ApplyAsync();
+await new MarkedModelVersionOf(store, new ModelVersion("0.1.0-preview.15.0.0")).ApplyAsync();
 
 // On upgrade: every migration from the stored version on, in one transaction.
 await new MigratedQueriesOf(
     store,
     [
         new RelabeledRecords(
-            new ModelVersion("0.1.0-preview.14.0.0"),
             new ModelVersion("0.1.0-preview.15.0.0"),
+            new ModelVersion("0.1.0-preview.16.0.0"),
             new Dictionary<string, string> { ["OldRecord"] = "NewRecord" }
         ),
         new RenamedProperties(
-            new ModelVersion("0.1.0-preview.15.0.0"),
             new ModelVersion("0.1.0-preview.16.0.0"),
+            new ModelVersion("0.1.0-preview.17.0.0"),
             "NewRecord",
             new Dictionary<string, string> { ["Old"] = "New" }
         ),
@@ -80,7 +85,7 @@ await new MigratedQueriesOf(
 ).ApplyAsync();
 
 ModelVersion? version = await new StoredModelVersionOf(store).ValueAsync();
-// 0.1.0-preview.16.0.0
+// 0.1.0-preview.17.0.0
 ```
 
 ## Related packages

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** depends on `PureQL.CSharp.Model.Graph` `0.1.0-preview.2.0.0`
+  and `PureQL.CSharp.Model.Graph.Neo4j.Abstractions` `0.1.0-preview.2.0.0`
+  (were `0.1.0-preview.1.1.0`), and through them on `PureQL.CSharp.Model`
+  `0.1.0-preview.15.0.0`, the model of PureQL specification
+  `0.1.0-preview.3.0.0`. The public API of this package is unchanged, but
+  `INeo4jStoredQueries` comes from the new Abstractions release and the
+  stored query graphs follow the new model.
+- No migration leads to model `0.1.0-preview.15.0.0`: graphs written with an
+  earlier model are not migrated, but dropped and stored again. The README
+  example now starts at `0.1.0-preview.15.0.0`.
+
 ## [0.1.0-preview.0.2.0] - 2026-11-11
 
 ### Changed
